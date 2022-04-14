@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
 ```
 Inflation is known as the rate of increase in prices over a given period of time, it is a broad measure of the cost of living in a country and overall increase in prices.
 
-The goal of this study will be to forecast inflation over a 12 month period with the help of five variables obtained from the Federal Reserve Economic Database (FRED), and compare the efficiency of the variables involved. Estimating the Phillips Curve model as a baseline($m1$), then estimating three additional models ($(m1, m2, m3)$). Where ($u_t$) is replaced with one of my assigned variables ($x_t$), which will be transformed to be stationary (so that variance, and autocorrelation structure do not change over time). ($u_t$) in this study represents annualized unemployment rate which is captured by `UNRATE`. We will use 12 lags (the fixed amount of passing time for a time series) for both variables and finally estimate an ensemble model ($me=m1+m2+m3+m4/4$) which is a fitted model of tne average of the four variables.
+The goal of this study will be to forecast inflation over a 12 month period with the help of five variables obtained from the Federal Reserve Economic Database (FRED), and compare the efficiency of the variables involved. Estimating the Phillips Curve model as a baseline($m1$), then estimating three additional models ($(m1, m2, m3)$). Where ($u_t$) is replaced with one of my assigned variables ($x_t$), which will be transformed to be stationary (so that variance, and autocorrelation structure do not change over time). ($u_t$) in this study represents annualized unemployment rate which is captured by `UNRATE`. We will use 12 lags (the fixed amount of passing time for a time series) for both variables and finally estimate an ensemble model ($me=m1+m2+m3+m4/4$) which is a fitted model of the average of the four variables.
 Each model is estimated over a training data set with observations through December 2018. We will also evaluate the out-of sample performance of our models using a testing data set with observations from January 2019 onward.
 ```{r loadPackages, message = FALSE}
 require(fpp3)
@@ -46,7 +46,7 @@ Xwide<- x %>%
 ```
 The Variable list includes `PCEPI`, Personal Consumption Expenditures: Chain-type Price Index, with units seasonally Adjusted and Index 2012=100. This indicator will be used to calculate inflation as it captures inflation across a variety of consumer expenses.
 
-`UNRATE` is the Unemployment Rate, measured in percent and seasonally adjusted, this variable has a direct correlation with inflation. Inflation and unemployment are known to have a inverse relationship with a concave slope. As unemployment decreases, inflation increases. This is the result of a increase in labor demand which leads to an increases in prices of good in order for firms to offset increased wages.  
+`UNRATE` is the Unemployment Rate, measured in percent and seasonally adjusted, this variable has a direct correlation with inflation. Inflation and unemployment are known to have a inverse relationship with a concave slope. As unemployment decreases, inflation increases. This is the result of a increase in labor demand which leads to an increases in prices of goods in order for firms to offset increased wages.  
 
 `MICH` is University of Michigan: Inflation Expectation, measured in percent and not seasonally adjusted. We assume this variable will hold an impact as it indicates the populations expectations of inflation and captures the effects of changes in behavior that stem from those expectations. 
 
@@ -77,7 +77,8 @@ ggplot(zm, aes(Date, value)) +
   geom_line() + 
   facet_wrap(~variable, scales = "free", ncol = 2)
 ```
-The below section fits the baseline Phillips curve model to show the model specification using TSLM, the forecast is made using TSLM because this function fits linear models to time series including trend and seasonality components. We are not using ARIMA since we are specifying the lag models according to economic theory. From this we can gather the R-squared adjusted R-squared, the low p-value of our F-statistic indicates joint significance of our variables.
+  
+  The below section fits the baseline Phillips curve model to show the model specification using TSLM, the forecast is made using TSLM because this function fits linear models to time series including trend and seasonality components. We are not using ARIMA since we are specifying the lag models according to economic theory. From this we can gather the R-squared adjusted R-squared, the low p-value of our F-statistic indicates joint significance of our variables.
 
 ```{r m1Model, message=FALSE}
 fitPhillipsc<- train_data %>%
@@ -152,7 +153,8 @@ But this does not mean `MICH` is the best predictor because when evaluated we se
 fitall %>% select(mMICH) %>% report()
 fitall %>% select(mMICH) %>% gg_tsresiduals()
 ```  
-Then we fit the ensemble model as the simple average of our three individual models.
+  
+  Then we fit the ensemble model as the simple average of our three individual models.
 Forecasting all 5 models over the test data set. We plot the 5 forecasts on a single graph and report the accuracy of the 5 models over the train and test data sets as shown below. The black line  indicates inflation and the colored lines indicate our models.Just by eyeballing we clearly observe that the model of worst fit is mUNRATE as it has the highest MAE, MASE, and RMSSE, as well as the fact more volatile than any other forecast and more volatile than history suggests inflation should be.
 ```{r ComboModel, message=FALSE}
 fitcombo <- fitall %>% mutate(combo = (mUNRATE + mMICH + mIPMAN + mEXP)/4)
