@@ -21,7 +21,7 @@ knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
 Inflation is known as the rate of increase in prices over a given period of time, it is a broad measure of the cost of living in a country and overall increase in prices.
 
 The goal of this study will be to forecast inflation over a 12 month period with the help of five variables obtained from the Federal Reserve Economic Database (FRED), and compare the efficiency of the variables involved. Estimating the Phillips Curve model as a baseline($m1$), then estimating three additional models ($(m1, m2, m3)$). Where ($u_t$) is replaced with one of my assigned variables ($x_t$), which will be transformed to be stationary (so that variance, and autocorrelation structure do not change over time). ($u_t$) in this study represents annualized unemployment rate which is captured by `UNRATE`. We will use 12 lags (the fixed amount of passing time for a time series) for both variables and finally estimate an ensemble model ($me=m1+m2+m3+m4/4$) which is a fitted model of tne average of the four variables.
-Each model is estimated over a training data set with observations through December 2018. We will also evaluate the out-of sample performance of our models using a testing data set with observations from January 201 onward.
+Each model is estimated over a training data set with observations through December 2018. We will also evaluate the out-of sample performance of our models using a testing data set with observations from January 2019 onward.
 ```{r loadPackages, message = FALSE}
 require(fpp3)
 require(tsibble)
