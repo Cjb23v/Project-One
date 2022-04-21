@@ -1,5 +1,5 @@
 ---
-title: "VAR/VECM"
+title: "VAR/VECM Project"
 author: "Caitlin Brown"
 date: "`r format(Sys.Date(),'%B %d, %Y')`"
 output:
@@ -37,50 +37,92 @@ require(stargazer)
 require(urca)
 require(tsDyn)
 require(apt) 
+require(forecast)
 ```
 
 A VAR is a dynamic reduced form model and is essentially a multivariate generalization of univariate AR(p) models
 
+
+<br> <br> <br> 
+<div align="center">
+
+***
+# Forecasting Averages:
+## Modeling Inflation With a One-Year Ahead Forecast
+***
+
 | Variable | Description |  |
 |:-----:|:------|----|
-| CES6562440001 |	 Housing Starts: Total: New Privately Owned Housing Units Started, Thousands of Units, Monthly, Seasonally Adjusted Annual Rate 	|  |	
-| CES0000000010 |  New Private Housing Units Authorized by Building Permits, Thousands of Units, Monthly, Seasonally Adjusted Annual Rate   |  |
+| CES6562440001 |	 All Employees, Child Day Care Services Seasonally Adjusted. The series comes from the Current Employment Statistics (Establishment Survey). Units in  Thousands of Persons, Seasonally Adjusted and Frequency Monthly. 	|  |	
+| CES0000000010 |  Seasonally Adjusted Women Employees, Total Non farm comes from the Current Employment Statistics (Establishment Survey). The non farm business sector excludes the economic activities of the following: general government, private households, nonprofit organizations serving individuals, and farms.
+To obtain estimates of women worker employment, the ratio of weighted women employees to the weighted all employees in the sample is assumed to equal the same ratio in the universe. The current month's women worker ratio, thus, is estimated and then multiplied by the all-employee estimate.
+|  |
 
+<div align="Left">
+
+<br> <br> <br> <br> <br>
+For this study I consider the relationship between total women employment in the US (CES0000000010) and total child daycare employment (CES6562440001). Since the logical order is the more women that are employed full time will increase the capacity of daycare needed, I'd expect that female employment would *lead* child daycare services. We'll try to formalize this notion.The reverse is possible where lack of access to reliable Child day care services causes mothers to deters seeking job opportunities and prevents female employment from rising.
 ```{r loadData}
 varList <- c("CES6562440001", "CES0000000010")
 X <- tq_get(varList, get = "economic.data", from = "1985-01-01") %>%
-  mutate(Month = yearmonth(date)) %>% dplyr::select(-date) %>%
-  as_tsibble(index = Month, key = symbol)
+  mutate(Date = yearmonth(date)) %>% dplyr::select(-date) %>%
+  as_tsibble(index = Date, key = symbol)
 Xw <- X %>%
   pivot_wider(names_from = symbol, values_from = price) %>%
   as_tsibble()
 ```
-
-
-```{r plotData}
-X %>% ggplot(aes(x = Month, y = price)) +
+```{r plotRawData}
+X %>% ggplot(aes(x = Date, y = price)) +
   geom_line() + ylab("Thousands of Persons") +
   facet_grid(vars(symbol), scales = "free_y") 
 ```
-
+A unit root check shows that all of the variables have a unit root.
 ```{r unitRoots}
 X %>% 
   features(price, unitroot_ndiffs) %>% 
   kable(format = "html", table.attr = "style='width:30%;' ") %>% 
   kableExtra::kable_styling()
 ```
-A quick unit root check shows that all of the variables have a unit root. 
-For this study I consider the relationship between total women employment in the US (CES0000000010) and total child daycare employment (CES6562440001). Since the logical order is the more women that are employed full time will increase the capacity of daycare needed, I'd expect that female employment would *lead* child daycare employment. We'll try to formalize this notion.The reverse is possible where lack of access to reliable Child day care services causes mothers to deters seeking job opportunities and prevents female employment from rising.
-I'll model the monthly growth rates of permits and starts.
+I'll model the monthly growth rates of Women who are employed and child day care services employment.
 ```{r EmploymentData}
 ZEmploy <- Xw %>%
   mutate(gFemEmpl = 100 * difference(log(CES0000000010)),
          gChildEmpl = 100 * difference(log(CES6562440001))) %>%
   dplyr::select(gFemEmpl, gChildEmpl) %>% 
   tidyr::drop_na()
-zEmploy <- as.ts(ZEmploy, start = c(1960, 2), frequency = 12)
+zEmploy <- as.ts(ZEmploy, start = c(1985, 2), frequency = 12)
 ```
-Now that we have our data we need to find out how many lags that we need in our VAR model. Note that the *order* of the variable in a VAR is going to matter when we compute impulse response functions.
+Next its important to find how many lags are needed in our VAR model. and this is done below. Optimal lag length selection criteria used, the Hannan-Quin criterion because it works well for fairly large sample sizes. If you choose p too large, estimate too many parameters and waste degrees of freedom but if p too small you omit important lag variables and your estimators are inconsistent. So it is safer to overestimate than to underestimate p.
+*order* of the variable in a VAR is going to matter when we compute impulse response functions,we want to order the variables from the most exogenous first to the most endogenous last. Usually we have to make a guess at this. In our example, it is apparent that permits logically precedes starts
+```{r lagLength}
+zE <- zEmploy[,c(1,2)]
+tmp <- VARselect(zE,lag.max=12,type="const")
+tmp
+p <- tmp$selection[2]
+
+fit <-VAR(zEmploy)
+tidy(fit)
+```
+
+```{r estVAR}
+# estimate the VAR(p)
+var.Employ<- VAR(zE,p=p,type="const")
+summary(var.Employ)
+```
+
+First, consider the significance of specific groups of parameters.What we want to know is whether or not lagged values of gPERMIT help to forecast future values of gHOUST. If so we say that gPERMIT *causes* gHOUST) and if not we say that gPERMIT *does not cause* gHOUST.
+
+Perhaps the most useful output from a VAR are the Impulse Response Functions (IRFs).
+```{r IRFs}
+plot(irf(var.Employ, n.ahead = 5, boot = TRUE ))
+```
+```{r FEVD}
+fevd(var.Employ, n.ahead = 12)
+```
+
+
+
+
 
 
 
