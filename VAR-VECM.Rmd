@@ -1,0 +1,87 @@
+---
+title: "VAR/VECM"
+author: "Caitlin Brown"
+date: "`r format(Sys.Date(),'%B %d, %Y')`"
+output:
+  html_document:
+    df_print: paged
+    code_folding: hide
+    toc: no
+    fig_caption: yes
+    theme: cerulean
+    toc_float: no
+    pdf_document: default
+---
+
+```{r setup, include = FALSE}
+rm(list=ls())
+graphics.off()
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{r loadPackages, message=FALSE}
+require(fpp3)
+require(tidyverse)
+require(dplyr)
+require(tidyquant)
+require(lubridate)
+require(timetk)
+require(vars)
+require(lmtest)
+require(kableExtra)
+require(stargazer)
+require(urca)
+require(tsDyn)
+require(apt) 
+```
+
+A VAR is a dynamic reduced form model and is essentially a multivariate generalization of univariate AR(p) models
+
+| Variable | Description |  |
+|:-----:|:------|----|
+| CES6562440001 |	 Housing Starts: Total: New Privately Owned Housing Units Started, Thousands of Units, Monthly, Seasonally Adjusted Annual Rate 	|  |	
+| CES0000000010 |  New Private Housing Units Authorized by Building Permits, Thousands of Units, Monthly, Seasonally Adjusted Annual Rate   |  |
+
+```{r loadData}
+varList <- c("CES6562440001", "CES0000000010")
+X <- tq_get(varList, get = "economic.data", from = "1985-01-01") %>%
+  mutate(Month = yearmonth(date)) %>% dplyr::select(-date) %>%
+  as_tsibble(index = Month, key = symbol)
+Xw <- X %>%
+  pivot_wider(names_from = symbol, values_from = price) %>%
+  as_tsibble()
+```
+
+
+```{r plotData}
+X %>% ggplot(aes(x = Month, y = price)) +
+  geom_line() + ylab("Thousands of Persons") +
+  facet_grid(vars(symbol), scales = "free_y") 
+```
+
+```{r unitRoots}
+X %>% 
+  features(price, unitroot_ndiffs) %>% 
+  kable(format = "html", table.attr = "style='width:30%;' ") %>% 
+  kableExtra::kable_styling()
+```
+A quick unit root check shows that all of the variables have a unit root. 
+For this study I consider the relationship between total women employment in the US (CES0000000010) and total child daycare employment (CES6562440001). Since the logical order is the more women that are employed full time will increase the capacity of daycare needed, I'd expect that female employment would *lead* child daycare employment. We'll try to formalize this notion.The reverse is possible where lack of access to reliable Child day care services causes mothers to deters seeking job opportunities and prevents female employment from rising.
+I'll model the monthly growth rates of permits and starts.
+```{r EmploymentData}
+ZEmploy <- Xw %>%
+  mutate(gFemEmpl = 100 * difference(log(CES0000000010)),
+         gChildEmpl = 100 * difference(log(CES6562440001))) %>%
+  dplyr::select(gFemEmpl, gChildEmpl) %>% 
+  tidyr::drop_na()
+zEmploy <- as.ts(ZEmploy, start = c(1960, 2), frequency = 12)
+```
+Now that we have our data we need to find out how many lags that we need in our VAR model. Note that the *order* of the variable in a VAR is going to matter when we compute impulse response functions.
+
+
+
+
