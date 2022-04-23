@@ -108,41 +108,43 @@ grangertest(gChildCare ~ gFemEmpl, order=p, data = zE)
 fit <-VAR(zEmploy)
 tidy(fit)
 ```
-Below is the Estimated Vector Auto-regression model, the 
+<font size="3"> Below is the Estimated Vector Auto-regression model by utilizing OLS per equation. Estimates a VAR by OLS per equation. The model is of the following form: 
+
+($y_{t} = A_{1yt−1} + . . . + A_{p}y_{t−p} + CD_{t} + u_{t}$)
+where ($y_{t}$) is a ($K × 1$) vector of endogenous variables and ($u_{t} $) assigns a spherical disturbance term of
+the same dimension. The estimated coefficients are not as telling as the significance of the *groups* of parameters with the implied dynamics from the estimation. The more significant interpretation can be gained from inspecting the Impulse Response Functions and the Forecasting Error Variance Decomposition.</font> 
 ```{r estVAR}
 # estimate the VAR(p)
 var.Employ<- VAR(zE,p=p,type="const")
 summary(var.Employ)
 ```
-Perhaps the most useful output from a VAR are the Impulse Response Functions (IRFs), the red dotted lines denote 95% confidence intervals for the IRFs, are usually presented as a set of 4.We can look at the IRFs to see what they tell us about the dynamics.  This is actually a little more promising. We can see that, even though we have a statistically significant feedback system, USSLIND has a lot more influence on INDPRO than the other way around.
+<font size="3">The Impulse Response Functions (IRFs), they are usually presented as a set of 4 with the red dotted lines of the IRF indicating the 95% confidence intervals. Looking at the IRFs will tell us about the dynamics, it  will measure changes in future responses of all variables in the time series when a variable is shocked by an impulse to another variable. This is more significant to look at than the VAR estimate coefficient, and from this we can see, even though we have may not have a statistically significant feedback system, female employment has a slightly little more influence on Child day care services than the other way around.</font> 
 ```{r IRFs}
 plot(irf(var.Employ, n.ahead = 5, boot = TRUE ))
 ```
-The Forecasting Error Variance Decomposition, The FEVD confirms what we see in the IRFs. Much of the  We can see that almost all of the forecast variance in gPERMIT is due to gPERMIT variation itself---the variance of gHOUST has very little influece. However, about 25% of the forecast variance of gHOUST can be explained by the variance in gPERMIT. This is a very intuitive way of seeing that movements of gPERMIT drive movements in gHOUST but not *vice versa*.
+<font size="3"> 
+  
+  The Forecasting Error Variance Decomposition, FEVD, "decomposes" the variance of the forecast error into the contributions from specific exogenous shocks and confirms what we see from the IRFs. Much of the forecast variance in female employment is due to female employment variation itself, the variance of child day care serves has very little influence. However, about 90% of the forecast variance of child day care can be explained by the variance in female employment. As the results show below, it is a intuitive way of determining the movements of female employment drive movements in child day care services but not *vice versa*.</font> 
 ```{r FEVD}
 fevd(var.Employ, n.ahead = 12)
 plot(fevd(var.Employ, n.ahead = 30))
-```
+```  
 
-</font> 
-
-```{r VECMEstimate}
+The code below also estimate the Vector Error Correction Model simply for comparison, the var depicts short-term dynamics only but the VECM has the benefits of both long-term and short-term.
+```{r VECMEstimateJustForComparison, results = 'hide'}
 VECM(
-  zE,
-  lag=4,
+  zE[,c(1,2)],
+  lag=p,
   r = 1,
   include = c("const"),
   beta = NULL,
-  estim = c("2OLS"),
+  estim = c("ML"),
   LRinclude = c("none"),
-  exogen = NULL
 )
 ```
 
 ### Conclusions
 
-VAR models are extremely useful and very commonly used in economic forecasting and continue to be the workhorse of macroeconomic modeling even 30 years after their introduction.
-
-In the next two sets of notes we will see a couple of extensions of VAR models. 
-
+From the Results of FEVD, IRF, and the Var model it would there not much significance of a leading relationship being present between the two variables, if there is it is minimal in scope, with more likely other factors acting as a more impactful *leading* variables. Although impacts of female employment are not statistically significant according to the p-values of our estimates VAR model, our IRF and FEVD indicate that female employment levels are useful in predicting the levels of Child Day care Services. Variables that would likely be more statistically significant in predicting levels of child day care services would be levels of married couples as well as working women, or 
+simply levels of Employed women with dependents. We also find that shocks to Child day care services have little to no impact on female employment levels, which is a reasonable conclusion since majority of women will have a back-up plan in place, such as family members, should they not have the means to afford day care.
 
