@@ -96,7 +96,7 @@ tmp <- VARselect(zE,lag.max=12,type="const")
 tmp
 p <- tmp$selection[2]
 ```
-<font size="3"> The Granger Tests low F-statistics of both tests lead me to believe, which is less than the F-critical value found in table, leads me too believe non-significance. As well as the high probability values of the F-statistic supports the notion neither of my results are significant.What we test for is to know whether lagged values of gFemEmploy help to forecast future values of gChildCare. If so we say that gFemEmloy *causes* gChildCare) and if not we say the opposite, from this I would conclude that neither predicts the other.</font> 
+<font size="3"> The Granger Tests low F-statistics of both tests, which is less than the F-critical value found in table, leads me too believe non-significance. As well as the high probability values of the F-statistic supports the notion neither of my results are significant.What we test for is to know whether lagged values of gFemEmploy help to forecast future values of gChildCare. If so we say that gFemEmloy *causes* gChildCare) and if not we say the opposite, from this I would conclude that neither predicts the other.</font> 
 ```{r TestingforVariableCausation}
 cat("H0: Access to Child Day Care doesn't cause Female Employment, H1: it does \n")
 grangertest(gFemEmpl ~ gChildCare, order=p, data = zE)
