@@ -130,7 +130,7 @@ fevd(var.Employ, n.ahead = 12)
 plot(fevd(var.Employ, n.ahead = 30))
 ```  
 
-The code below also estimate the Vector Error Correction Model simply for comparison, the var depicts short-term dynamics only but the VECM has the benefits of both long-term and short-term.
+<font size="3"> The code below also estimate the Vector Error Correction Model simply for comparison, the var depicts short-term dynamics only but the VECM has the benefits of both long-term and short-term.</font> 
 ```{r VECMEstimateJustForComparison, results = 'hide'}
 VECM(
   zE[,c(1,2)],
@@ -145,6 +145,5 @@ VECM(
 
 ### Conclusions
 
-From the Results of FEVD, IRF, and the Var model it would there not much significance of a leading relationship being present between the two variables, if there is it is minimal in scope, with more likely other factors acting as a more impactful *leading* variables. Although impacts of female employment are not statistically significant according to the p-values of our estimates VAR model, our IRF and FEVD indicate that female employment levels are useful in predicting the levels of Child Day care Services. Variables that would likely be more statistically significant in predicting levels of child day care services would be levels of married couples as well as working women, or 
-simply levels of Employed women with dependents. We also find that shocks to Child day care services have little to no impact on female employment levels, which is a reasonable conclusion since majority of women will have a back-up plan in place, such as family members, should they not have the means to afford day care.
+<font size="3">From the Results of FEVD, IRF, and the Var model it would there not much significance of a leading relationship being present between the two variables, if there is it is minimal in scope, with more likely other factors acting as a more impactful *leading* variables. Although impacts of female employment are not statistically significant according to the p-values of our estimates VAR model, our IRF and FEVD indicate that female employment levels are useful in predicting the levels of Child Day care Services. Variables that would likely be more statistically significant in predicting levels of child day care services would be levels of married couples as well as working women, or Simply levels of Employed women with dependents. We also find that shocks to Child day care services have little to no impact on female employment levels, which is a reasonable conclusion since majority of women will have a back-up plan in place, such as family members, should they not have the means to afford day care.</font> 
 
