@@ -52,7 +52,7 @@ require(tsibble)
 https://github.com/Cjb23v/Project-One  
 
 For this study estimates a VAR model of the two variables. A VAR is a dynamic reduced form model that generalized the single auto regression by allowing for multivariate time series, it captures the relationship of changing quantities over time and is essentially a generalization of of uni-variate AR(p) model.
-VECM models are special cases of VAR models where all variables are stationary, generally outperforming VAR models.It allows for long term and short term inspection as well as co integration between variables. Co-integration also can reduce the possibility that variables have a relationship that look correlated but aren't. For this reason the VECM model will also be freily explored.
+VECM models are special cases of VAR models where all variables are stationary, generally outperforming VAR models.It allows for long term and short term inspection as well as co integration between variables. Co-integration also can reduce the possibility that variables have a relationship that look correlated but aren't. For this reason the VECM model will also be freely explored.
 
 
 Considering the relationship between total women employment in the US (CES0000000010) and total child daycare employment (CES6562440001). It is expected logical order follows, as more women are employed full time the necessities of child day care services also increases. If this is the case then female employment should *lead* child daycare services. There is possibility of the reverse being true, where abundance, or lack of, access to reliable (and affordable) Child day care services encourages, or deters, mothers to seek job opportunities.  
