@@ -12,17 +12,11 @@ output:
     toc_float: no
     pdf_document: default
 ---
-
 ```{r setup, include = FALSE}
 rm(list=ls())
 graphics.off()
-knitr::opts_chunk$set(
-	echo = TRUE,
-	message = FALSE,
-	warning = FALSE
-)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
-
 ```{r loadPackages, message=FALSE}
 require(fpp3)
 require(tidyverse)
@@ -37,31 +31,32 @@ require(stargazer)
 require(urca)
 require(tsDyn)
 require(apt) 
-require(forecast)
+require(tsibble)
 ```
-
-A VAR is a dynamic reduced form model and is essentially a multivariate generalization of univariate AR(p) models
-
-
-<br> <br> <br> 
+<br> 
 <div align="center">
-
 ***
-# Forecasting Averages:
-## Modeling Inflation With a One-Year Ahead Forecast
-***
+# Investigating the Dynamic relationship of Female Employment and Child Day Care Services
+***  
 
 | Variable | Description |  |
 |:-----:|:------|----|
 | CES6562440001 |	 All Employees, Child Day Care Services Seasonally Adjusted. The series comes from the Current Employment Statistics (Establishment Survey). Units in  Thousands of Persons, Seasonally Adjusted and Frequency Monthly. 	|  |	
-| CES0000000010 |  Seasonally Adjusted Women Employees, Total Non farm comes from the Current Employment Statistics (Establishment Survey). The non farm business sector excludes the economic activities of the following: general government, private households, nonprofit organizations serving individuals, and farms.
-To obtain estimates of women worker employment, the ratio of weighted women employees to the weighted all employees in the sample is assumed to equal the same ratio in the universe. The current month's women worker ratio, thus, is estimated and then multiplied by the all-employee estimate.
+| CES0000000010 |  Seasonally Adjusted Women Employees, Total Non farm. Units in  Thousands of Persons, Seasonally Adjusted and Frequency Monthly. The non farm business sector excludes the economic activities of the following: general government, private households, nonprofit organizations serving individuals, and farms.To obtain estimates of women worker employment, the ratio of weighted women employees to the weighted all employees in the sample is assumed to equal the same ratio in the universe. The current month's women worker ratio, thus, is estimated and then multiplied by the all-employee estimate.
 |  |
-
 <div align="Left">
+<br>
+<font size="3"> 
 
-<br> <br> <br> <br> <br>
-For this study I consider the relationship between total women employment in the US (CES0000000010) and total child daycare employment (CES6562440001). Since the logical order is the more women that are employed full time will increase the capacity of daycare needed, I'd expect that female employment would *lead* child daycare services. We'll try to formalize this notion.The reverse is possible where lack of access to reliable Child day care services causes mothers to deters seeking job opportunities and prevents female employment from rising.
+### GitHub Link
+https://github.com/Cjb23v/Project-One  
+
+For this study estimates a VAR model of the two variables. A VAR is a dynamic reduced form model that generalized the single auto regression by allowing for multivariate time series, it captures the relationship of changing quantities over time and is essentially a generalization of of uni-variate AR(p) model.
+VECM models are special cases of VAR models where all variables are stationary, generally outperforming VAR models.It allows for long term and short term inspection as well as co integration between variables. Co-integration also can reduce the possibility that variables have a relationship that look correlated but aren't. For this reason the VECM model will also be freily explored.
+
+
+Considering the relationship between total women employment in the US (CES0000000010) and total child daycare employment (CES6562440001). It is expected logical order follows, as more women are employed full time the necessities of child day care services also increases. If this is the case then female employment should *lead* child daycare services. There is possibility of the reverse being true, where abundance, or lack of, access to reliable (and affordable) Child day care services encourages, or deters, mothers to seek job opportunities.  
+We begin by loading and plotting the raw data, as shown below: </font> 
 ```{r loadData}
 varList <- c("CES6562440001", "CES0000000010")
 X <- tq_get(varList, get = "economic.data", from = "1985-01-01") %>%
@@ -71,59 +66,83 @@ Xw <- X %>%
   pivot_wider(names_from = symbol, values_from = price) %>%
   as_tsibble()
 ```
+<font size="3"> The graph generated inspects both variables independently, we can see the trends are almost identical to one another with a steep decline to both variables being in February of 2020. Its safe to assume this shock to employment in both cases was caused by the Covid Pandemic, driving up unemployment in both fields.</font> 
 ```{r plotRawData}
 X %>% ggplot(aes(x = Date, y = price)) +
   geom_line() + ylab("Thousands of Persons") +
   facet_grid(vars(symbol), scales = "free_y") 
 ```
-A unit root check shows that all of the variables have a unit root.
+
+<font size="3">A unit root check, as shown below, indicates that both variables have the same unit root/ are stationary. Ndiffs estimates that the number of differences required to make this time series stationary is 1.</font> 
 ```{r unitRoots}
 X %>% 
   features(price, unitroot_ndiffs) %>% 
   kable(format = "html", table.attr = "style='width:30%;' ") %>% 
   kableExtra::kable_styling()
-```
-I'll model the monthly growth rates of Women who are employed and child day care services employment.
+```  
 ```{r EmploymentData}
 ZEmploy <- Xw %>%
   mutate(gFemEmpl = 100 * difference(log(CES0000000010)),
-         gChildEmpl = 100 * difference(log(CES6562440001))) %>%
-  dplyr::select(gFemEmpl, gChildEmpl) %>% 
+         gChildCare = 100 * difference(log(CES6562440001))) %>%
+  dplyr::select(gFemEmpl, gChildCare) %>% 
   tidyr::drop_na()
 zEmploy <- as.ts(ZEmploy, start = c(1985, 2), frequency = 12)
 ```
-Next its important to find how many lags are needed in our VAR model. and this is done below. Optimal lag length selection criteria used, the Hannan-Quin criterion because it works well for fairly large sample sizes. If you choose p too large, estimate too many parameters and waste degrees of freedom but if p too small you omit important lag variables and your estimators are inconsistent. So it is safer to overestimate than to underestimate p.
-*order* of the variable in a VAR is going to matter when we compute impulse response functions,we want to order the variables from the most exogenous first to the most endogenous last. Usually we have to make a guess at this. In our example, it is apparent that permits logically precedes starts
-```{r lagLength}
+<font size="3"> After modeling the monthly growth rates of Women who are employed and child day care services. Next is to find how many lags are needed in our VAR model. This is done below, to find optimal lag length selection we'll use the Hannan-Quin criterion since it works well for fairly large sample sizes (we find the optimal length is 4 according to this criterion). For choosing a p, it is safer to overestimate than to underestimate p, a p too small will omit important lag variables and render estimators inconsistent.
+In VAR models the *order* of the variable is going to matter when we compute impulse response functions, so the order of the variables from first to last is the most exogenous to most endogenous. We'd usually guess at this but in my opinion the logical action is female employment precedes child day care services, as reason dictates mothers would only be in need of child care after employment.</font> 
+```{r lagLength, results = 'hide'}
 zE <- zEmploy[,c(1,2)]
 tmp <- VARselect(zE,lag.max=12,type="const")
 tmp
 p <- tmp$selection[2]
-
+```
+<font size="3"> The Granger Tests low F-statistics of both tests lead me to believe, which is less than the F-critical value found in table, leads me too believe non-significance. As well as the high probability values of the F-statistic supports the notion neither of my results are significant.What we test for is to know whether lagged values of gFemEmploy help to forecast future values of gChildCare. If so we say that gFemEmloy *causes* gChildCare) and if not we say the opposite, from this I would conclude that neither predicts the other.</font> 
+```{r TestingforVariableCausation}
+cat("H0: Access to Child Day Care doesn't cause Female Employment, H1: it does \n")
+grangertest(gFemEmpl ~ gChildCare, order=p, data = zE)
+cat("H0:  Female Employment doesn't cause Child Day Car Service, H1: it does \n")
+grangertest(gChildCare ~ gFemEmpl, order=p, data = zE)
+``` 
+```{r check residuals, results = 'hide'}
+#verifying that our estimated residuals are indeed white noise to make sure that we have not chosen too small a value for `p`
 fit <-VAR(zEmploy)
 tidy(fit)
 ```
-
+Below is the Estimated Vector Auto-regression model, the 
 ```{r estVAR}
 # estimate the VAR(p)
 var.Employ<- VAR(zE,p=p,type="const")
 summary(var.Employ)
 ```
-
-First, consider the significance of specific groups of parameters.What we want to know is whether or not lagged values of gPERMIT help to forecast future values of gHOUST. If so we say that gPERMIT *causes* gHOUST) and if not we say that gPERMIT *does not cause* gHOUST.
-
-Perhaps the most useful output from a VAR are the Impulse Response Functions (IRFs).
+Perhaps the most useful output from a VAR are the Impulse Response Functions (IRFs), the red dotted lines denote 95% confidence intervals for the IRFs, are usually presented as a set of 4.We can look at the IRFs to see what they tell us about the dynamics.  This is actually a little more promising. We can see that, even though we have a statistically significant feedback system, USSLIND has a lot more influence on INDPRO than the other way around.
 ```{r IRFs}
 plot(irf(var.Employ, n.ahead = 5, boot = TRUE ))
 ```
+The Forecasting Error Variance Decomposition, The FEVD confirms what we see in the IRFs. Much of the  We can see that almost all of the forecast variance in gPERMIT is due to gPERMIT variation itself---the variance of gHOUST has very little influece. However, about 25% of the forecast variance of gHOUST can be explained by the variance in gPERMIT. This is a very intuitive way of seeing that movements of gPERMIT drive movements in gHOUST but not *vice versa*.
 ```{r FEVD}
 fevd(var.Employ, n.ahead = 12)
+plot(fevd(var.Employ, n.ahead = 30))
 ```
 
+</font> 
 
+```{r VECMEstimate}
+VECM(
+  zE,
+  lag=4,
+  r = 1,
+  include = c("const"),
+  beta = NULL,
+  estim = c("2OLS"),
+  LRinclude = c("none"),
+  exogen = NULL
+)
+```
 
+### Conclusions
 
+VAR models are extremely useful and very commonly used in economic forecasting and continue to be the workhorse of macroeconomic modeling even 30 years after their introduction.
 
-
+In the next two sets of notes we will see a couple of extensions of VAR models. 
 
 
